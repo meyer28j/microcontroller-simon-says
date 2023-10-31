@@ -5,7 +5,7 @@
 // from data rather than using code logic?
 
 #include "main.h"
-#include "STM32F103RB.h"
+//#include "STM32F103RB.h"
 
 #include <time.h>
 
@@ -52,36 +52,104 @@ void button_control_LED_step() {
 }
 
 
-int main(void)
-{
+void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number) {
+	// enable a specified port as output, 50MHz push-pull
+	
+	// distinguish between CRL (ports 0-7) and CRH (ports 8-15)
+	if (port_number < 8) {
+		
+		// set MODE bits HIGH, 11 = output, 50MHz
+		GPIO->CRL |= (1u << (port_number << 2)) | (1u << ((port_number << 2) + 1)); 
+
+		// set CNF bits LOW, 00 = push-pull (in output mode)
+		GPIO->CRL &= ~(1u << ((port_number << 2) + 2)) & ~(1u << ((port_number << 2) + 3)); 
+		
+	} else { // port range in CRH
+		port_number -= 8;
+		// set MODE bits HIGH, 11 = output, 50MHz
+		GPIO->CRH |= (1u << (port_number << 2)) | (1u << ((port_number << 2) + 1)); 
+
+		// set CNF bits LOW, 00 = push-pull (in output mode)
+		GPIO->CRH &= ~(1u << ((port_number << 2) + 2)) & ~(1u << ((port_number << 2) + 3)); 
+	}
+	
+	return;
+}
+
+
+void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number) {
+	// enable a specified port as input (button press)
+	
+	// distinguish between CRL (ports 0-7) and CRH (ports 8-15)
+	if (port_number < 8) {
+		
+		// clear MODE bits to LOW (00 = input mode)
+		GPIO->CRL &= ~(0x11u << ((port_number << 2) + 1));
+		
+		// set CNF bits to 10 = pull-up/down (in input mode)
+		// set upper CNF bit to HIGH
+		GPIO->CRL |= (0x1u << ((port_number << 2) + 3));
+		
+		// clear lower CNF bit to LOW
+		GPIO->CRL &= ~(0x1u << ((port_number << 2) + 2));	
+			
+	} else { // port range in CRH
+		port_number -= 8;
+		// clear MODE bits to LOW (00 = input mode)
+		GPIO->CRH &= ~(0x11u << ((port_number << 2) + 1));
+		
+		// set CNF bits to 10 = pull-up/down (in input mode)
+		// set upper CNF bit to HIGH
+		GPIO->CRH |= (0x1u << ((port_number << 2) + 3));
+		
+		// clear lower CNF bit to LOW
+		GPIO->CRH &= ~(0x1u << ((port_number << 2) + 2));
+	}		
+	return; 
+}
+
+
+int main(void) {
 	
 	// enable clock for ports A, B, C, D
 	RCC->APB2ENR |= (1u << 2) | (1u << 3) | (1u << 4) | (1u << 5); // set bits 2, 3, 4, 5 HIGH
 	
 	
 	
+	// enable control of port A5, green LED on STM32F103RB board
+	// set port A MODE5 bits to 11 = output, 50MHz
+	//GPIOA->CRL |= (1u << 20) | (1u << 21); // set bits 20 and 21 HIGH
+	
+	// clear port A CNF5 bits to 00 = push-pull (in output mode)
+	//GPIOA->CRL &= ~(1u << 22) & ~(1u << 23); // clear bits 22 and 23 to LOW
+	enable_GPIO_output(GPIOA, 5);
 	
 	
 	// enable 
 	// set to output mode
 	// set port A MODE0 bits to 11 = output, 50MHz
-	GPIOA->CRL |= (1u) | (1u << 1); // set MODE0 bits 0 and 1 HIGH
+	//GPIOA->CRL |= (1u) | (1u << 1); // set MODE0 bits 0 and 1 HIGH
 	
-	// clear port A CNF5 bits to 00 = push-pull (in output mode)
-	GPIOA->CRL &= ~(1u << 2) & ~(1u << 3); // clear bits 2 and 3 to LOW
+	// clear port A CNF0 bits to 00 = push-pull (in output mode)
+	//GPIOA->CRL &= ~(1u << 2) & ~(1u << 3); // clear bits 2 and 3 to LOW
+	enable_GPIO_output(GPIOA, 0);
+	enable_GPIO_output(GPIOA, 1);
+	enable_GPIO_output(GPIOA, 2);
+	enable_GPIO_output(GPIOA, 3);
 	
-	// enable port A output-data pin 0
-	GPIOA->ODR |= 0x1u; // set bit 0 to HIGH
+		
+		
+	// enable port D5 as input (black button)
+	// set port D MODE5 to 00 = input
+	//GPIOD->CRL &= ~(0x11u << 21); // clear bits 20 and 21 to LOW (input mode)
 	
-	
-	
-	// enable control of port A5, green LED on STM32F103RB board
-	// set port A MODE5 bits to 11 = output, 50MHz
-	GPIOA->CRL |= (1u << 20) | (1u << 21); // set bits 20 and 21 HIGH
-	
-	// clear port A CNF5 bits to 00 = push-pull (in output mode)
-	GPIOA->CRL &= ~(1u << 22) & ~(1u << 23); // clear bits 22 and 23 to LOW
-	
+	// set port D CNF5 to 10 = pull-up/pull-down (in input mode)
+	//GPIOD->CRL |= (0x1u << 23); // set bit 23 to HIGH
+	//GPIOD->CRL &= ~(0x1u << 22); // clear bit 22 to LOW
+	enable_GPIO_input(GPIOD, 5);
+	enable_GPIO_input(GPIOD, 10);
+	enable_GPIO_input(GPIOD, 14);
+	enable_GPIO_input(GPIOD, 15);
 	
 	
 	// enable DAC (digital to analog converter) to enable
@@ -102,16 +170,7 @@ int main(void)
 	
 	
 	
-	
-	
-	
-	
-	// enable port D5 as input (black button)
-	GPIOD->CRL &= ~(0x11u << 20); // clear bits 20 and 21 to LOW (input mode)
-	// set bits 22 and 23 to 0x10... so just set bit 22 to HIGH (GPIO push/pull)
-	GPIOD->CRL |= (0x1u << 23); 
-	
-	
+
 	
 	
 	
@@ -120,7 +179,7 @@ int main(void)
 	
 		button_control_LED_step();
 		
-}
+	}
 	
 	return 0;
 }
