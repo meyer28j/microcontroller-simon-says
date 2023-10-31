@@ -25,6 +25,27 @@ typedef struct
 #define RCC ((RCC_TypeDef *) 0x40021000)
 
 
+// map for DAC, digital to analog converter
+typedef struct
+{
+	volatile uint32_t CR;
+	volatile uint32_t SWTRIGR;
+	volatile uint32_t DHR12R1;
+	volatile uint32_t DHR12L1;
+	volatile uint32_t DHR8R1;
+	volatile uint32_t DHR12R2;
+	volatile uint32_t DHR12L2;
+	volatile uint32_t DHR8R2;
+	volatile uint32_t DHR12RD;
+	volatile uint32_t DHR12LD;
+	volatile uint32_t DHR8RD;
+	volatile uint32_t DOR1;
+	volatile uint32_t DOR2;
+} DAC_TypeDef;
+
+#define DAC ((DAC_TypeDef *) 0x40007800)
+
+
 // map for GPIO registers
 typedef struct
 {
@@ -39,3 +60,5 @@ typedef struct
 
 #define GPIOA ((GPIO_TypeDef *) 0x40010800)
 #define GPIOB ((GPIO_TypeDef *) 0x40010C00)
+#define GPIOC ((GPIO_TypeDef *) 0x40011000)
+#define GPIOD ((GPIO_TypeDef *) 0x40011400)

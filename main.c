@@ -9,11 +9,6 @@
 
 #include <time.h>
 
-int globalCounter = 0;
-
-#define GPIOC ((GPIO_TypeDef *) 0x40011000)
-#define GPIOD ((GPIO_TypeDef *) 0x40011400)
-
 
 // function taken from https://www.geeksforgeeks.org/time-delay-c/
 void delay(uint32_t number_of_seconds)
@@ -68,18 +63,47 @@ int main(void)
 	
 	
 	// enable 
-	GPIOA->CRL |= (0x11u); // set MODE0 bits 0 and 1 HIGH
+	// set to output mode
+	// set port A MODE0 bits to 11 = output, 50MHz
+	GPIOA->CRL |= (1u) | (1u << 1); // set MODE0 bits 0 and 1 HIGH
 	
-	// enable output-data pin 0 on port A
+	// clear port A CNF5 bits to 00 = push-pull (in output mode)
+	GPIOA->CRL &= ~(1u << 2) & ~(1u << 3); // clear bits 2 and 3 to LOW
+	
+	// enable port A output-data pin 0
 	GPIOA->ODR |= 0x1u; // set bit 0 to HIGH
 	
 	
-	// enable port A5 as output (green LED on STM32F103RB board)
+	
+	// enable control of port A5, green LED on STM32F103RB board
 	// set port A MODE5 bits to 11 = output, 50MHz
 	GPIOA->CRL |= (1u << 20) | (1u << 21); // set bits 20 and 21 HIGH
 	
 	// clear port A CNF5 bits to 00 = push-pull (in output mode)
-	GPIOA->CRL &= ~(1u << 22) & ~(1u << 23); // clear bits 22 and 23
+	GPIOA->CRL &= ~(1u << 22) & ~(1u << 23); // clear bits 22 and 23 to LOW
+	
+	
+	
+	// enable DAC (digital to analog converter) to enable
+	// output to breadboard pins
+	// DAC boundary address: 0x4000 7800
+	
+	// page 256 of STM32F103RB manual:
+	// Each DAC channel can be powered on by setting its corresponding ENx bit in the DAC_CR
+	// register. The DAC channel is then enabled after a startup time tWAKEUP
+	
+	
+	// DAC_CR, offset 0x0
+	// enable EN1 (bit 0) to enable power on one rail
+	//DAC->CR |= (1u);
+	
+	// enable EN2 (bit 16) to enable other rail
+	//DAC->CR |= (1u << 16);
+	
+	
+	
+	
+	
 	
 	
 	// enable port D5 as input (black button)
