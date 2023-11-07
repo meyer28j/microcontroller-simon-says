@@ -7,36 +7,11 @@
 #include "main.h"
 //#include "STM32F103RB.h"
 
-#include <time.h>
-
-
-// function taken from https://www.geeksforgeeks.org/time-delay-c/
-void delay(uint32_t number_of_seconds)
-{
-    // Converting time into milli_seconds
-    // uint32_t milli_seconds = 1000 * number_of_seconds;
-		uint32_t milli_seconds = number_of_seconds;
- 
-    // Storing start time
-    clock_t start_time = clock();
- 
-    // looping till required time is not achieved
-    while (clock() < start_time + milli_seconds);
-}
-
-void blink(int count) {
-		for (int i = 0; i < count; i++) {
-		GPIOA->ODR |= (1u << 5);
-		delay(1);
-		GPIOA->ODR &= (1u << 5);
-		delay(1);
-	}
-}
 
 void write_input_to_output(GPIO_TypeDef* GPIO_in, 
-													GPIO_TypeDef* GPIO_out, 
-													int pin_in, 
-													int pin_out) {
+														GPIO_TypeDef* GPIO_out, 
+														int pin_in, 
+														int pin_out) {
 	
 	// isolate input bit from GPIO_in
 	uint32_t input_bit = GPIO_in->IDR;
@@ -54,6 +29,7 @@ void write_input_to_output(GPIO_TypeDef* GPIO_in,
 	
 	}	// if not equal, do nothing
 }
+
 
 void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number) {
 	// enable a specified port as output, 50MHz push-pull
@@ -124,33 +100,34 @@ void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number) {
 int main(void) {
 	
 	// enable clock for ports A, B, C, D
-	RCC->APB2ENR |= (1u << 2) | (1u << 3) | (1u << 4) | (1u << 5); // set bits 2, 3, 4, 5 HIGH
+	RCC->APB2ENR |= (1u << 2) | (1u << 3) | (1u << 4); // set bits 2, 3, 4, 5 HIGH
 
-	
-	// set port A pins 0-3 and 5 to output
-	enable_GPIO_output(GPIOA, 0);		// board LEDs
-	enable_GPIO_output(GPIOA, 1);
-	enable_GPIO_output(GPIOA, 2);
-	enable_GPIO_output(GPIOA, 3);
+	// enable on-board button/LED control
 	enable_GPIO_output(GPIOA, 5); 	// green LED on STM32F103RB board
-
-	// set port C13 as input
 	enable_GPIO_input(GPIOC, 13); 	// blue button on STM32F103RB board
 	
-	// set port D5, 10, 14, and 15 as input 
-	enable_GPIO_input(GPIOD, 5); 	// black button
-	enable_GPIO_input(GPIOD, 10); // red
-	enable_GPIO_input(GPIOD, 14); // blue
-	enable_GPIO_input(GPIOD, 15); // green
+	// set port A pins 0, 1, and 4
+	// set port B pin 0 to output
+	enable_GPIO_output(GPIOA, 0);		// board LEDs
+	enable_GPIO_output(GPIOA, 1);
+	enable_GPIO_output(GPIOA, 4);
+	enable_GPIO_output(GPIOB, 0);
+
+	
+	// set port B4, 6, 8, and 9 to input
+	enable_GPIO_input(GPIOB, 4); // black button
+	enable_GPIO_input(GPIOB, 6); // red
+	enable_GPIO_input(GPIOB, 8); // blue
+	enable_GPIO_input(GPIOB, 9); // green
 	
 	while (1) {
 	
-		write_input_to_output(GPIOC, GPIOA, 13, 5);
-		write_input_to_output(GPIOD, GPIOA, 5, 0);
-		write_input_to_output(GPIOD, GPIOA, 10, 1);
-		write_input_to_output(GPIOD, GPIOA, 15, 2);
-		write_input_to_output(GPIOD, GPIOA, 14, 3);
-		//button_control_LED_step();
+		write_input_to_output(GPIOC, GPIOA, 13, 5); // on-board button/LED control
+		
+		write_input_to_output(GPIOB, GPIOA, 4, 0); // black button/LED
+		write_input_to_output(GPIOB, GPIOA, 6, 1); // red button/LED
+		write_input_to_output(GPIOB, GPIOA, 8, 4); // green button/LED
+		write_input_to_output(GPIOB, GPIOB, 9, 0); // blue button/LED
 		
 	}
 	

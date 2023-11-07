@@ -9,7 +9,7 @@ void write_input_to_output(GPIO_TypeDef* GPIO_in,
 													GPIO_TypeDef* GPIO_out, 
 													int pin_in, 
 													int pin_out);
-	
+													
 void button_control_LED_step(void);
 
 void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number);
