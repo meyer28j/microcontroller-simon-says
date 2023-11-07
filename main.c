@@ -40,8 +40,8 @@ void write_input_to_output(GPIO_TypeDef* GPIO_in,
 	
 	// isolate input bit from GPIO_in
 	uint32_t input_bit = GPIO_in->IDR;
-	input_bit >>= (pin_in - pin_out); 		// shift input bit to output bit position
-	input_bit &= (1u << pin_out); 	// isolate input bit in output bit position
+	input_bit >>= (pin_in - pin_out); 	// shift input bit to output bit position
+	input_bit &= (1u << pin_out); 			// isolate input bit in output bit position
 	
 	// isolate output bit from GPIO_out
 	uint32_t output_bit = GPIO_out->ODR;
@@ -62,25 +62,25 @@ void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number) {
 	
 	// convert port_number to half-byte position
 	// used for shifting bit set/clear masks
-	int port_hb_location = port_number << 2;
+	int pin_bit_address = port_number << 2;
 	
 	// distinguish between CRL (ports 0-7) and CRH (ports 8-15)
 	if (port_number < 8) {
 		
 		// set MODE bits HIGH, 11 = output, 50MHz
-		GPIO->CRL |= (1u << port_hb_location) | (1u << (port_hb_location + 1)); 
+		GPIO->CRL |= (1u << pin_bit_address) | (1u << (pin_bit_address + 1)); 
 
 		// set CNF bits LOW, 00 = push-pull (in output mode)
-		GPIO->CRL &= ~(1u << (port_hb_location + 2)) & ~(1u << (port_hb_location + 3)); 
+		GPIO->CRL &= ~(1u << (pin_bit_address + 2)) & ~(1u << (pin_bit_address + 3)); 
 		
 	} else { // port range in CRH
-		port_hb_location -= 32;
+		pin_bit_address -= 32;
 		
 		// set MODE bits HIGH, 11 = output, 50MHz
-		GPIO->CRH |= (1u << port_hb_location) | (1u << (port_hb_location + 1)); 
+		GPIO->CRH |= (1u << pin_bit_address) | (1u << (pin_bit_address + 1)); 
 
 		// set CNF bits LOW, 00 = push-pull (in output mode)
-		GPIO->CRH &= ~(1u << (port_hb_location + 2)) & ~(1u << (port_hb_location + 3)); 
+		GPIO->CRH &= ~(1u << (pin_bit_address + 2)) & ~(1u << (pin_bit_address + 3)); 
 	}
 	
 	return;
@@ -92,30 +92,30 @@ void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number) {
 	
 	// convert port_number to half-byte position
 	// used for shifting bit set/clear masks
-	int port_hb_location = port_number << 2;
+	int pin_bit_address = port_number << 2;
 	
 	// distinguish between CRL (ports 0-7) and CRH (ports 8-15)
 	if (port_number < 8) {
 		
 		// clear MODE bits to LOW (00 = input mode)
-		GPIO->CRL &= ~(0x11u << (port_hb_location));
+		GPIO->CRL &= ~(0x11u << (pin_bit_address));
 		
 		// set CNF bits to 10 = pull-up/down (in input mode)
 		// set upper CNF bit to HIGH
-		GPIO->CRL |= (0x1u << (port_hb_location + 3));
+		GPIO->CRL |= (0x1u << (pin_bit_address + 3));
 		
 		// clear lower CNF bit to LOW
-		GPIO->CRL &= ~(0x1u << (port_hb_location + 2));	
+		GPIO->CRL &= ~(0x1u << (pin_bit_address + 2));	
 			
 	} else { // port range in CRH
-		port_hb_location -= 32; 
+		pin_bit_address -= 32; 
 		
 		// clear MODE bits to LOW (00 = input mode)
-		GPIO->CRH &= ~(0x11u << (port_hb_location));
+		GPIO->CRH &= ~(0x11u << (pin_bit_address));
 		
 		// set CNF bits to 10 = pull-up/down (in input mode)
-		GPIO->CRH |= (0x1u << (port_hb_location + 3));
-		GPIO->CRH &= ~(0x1u << (port_hb_location + 2));
+		GPIO->CRH |= (0x1u << (pin_bit_address + 3));
+		GPIO->CRH &= ~(0x1u << (pin_bit_address + 2));
 	}		
 	return; 
 }
