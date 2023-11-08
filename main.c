@@ -1,22 +1,26 @@
 
-// HINT: when you hit a button, you get a signal
-// can you take this information and drive the LED?
-// i.e. is there a way to transform values directly
-// from data rather than using code logic?
-
 #include "main.h"
-//#include "STM32F103RB.h"
+
+// represents button input
+// -1  = no input
+// 0-3 = corresponding button was pressed
+int input_global = -1;	
 
 static volatile struct {
 	GPIO_TypeDef* GPIO;
 	int pin;
 } led[4];
 
+static volatile struct {
+	GPIO_TypeDef* GPIO;
+	int pin;
+} button[4];
 
-void delay(uint32_t delay_value) {
-	uint32_t count = 0;
-	uint32_t inner_count = 0;
-	uint32_t internal_delay = delay_value;
+
+void delay(uint32_t volatile delay_value) {
+	uint32_t volatile count = 0;
+	uint32_t volatile inner_count = 0;
+	uint32_t volatile internal_delay = delay_value;
 	
 	while (count < delay_value) {
 		while (inner_count < internal_delay) {
@@ -27,8 +31,8 @@ void delay(uint32_t delay_value) {
 	}
 }
 
-// power on LED (0, 1, 2, or 3) for specified duration
 void blink(int led_number, uint32_t duration) {
+	// power on LED (0, 1, 2, or 3) for specified duration
 	if (led_number < 0 || led_number > 3) { // illegal values
 		return;
 	}
@@ -40,13 +44,65 @@ void blink(int led_number, uint32_t duration) {
 }
 
 
-// returns 1 if user inputs value
-// else returns 0 if max_time elapsed
-// without input from user
-int timer_interruptable(uint32_t max_time) {
+int detect_input(void) {
+	// return values:
+	// -1: no input
+	//  0: black button was pressed
+	//  1: red button
+	//  2: green button
+	//  3: blue button
+	// This function assumes one button is pressed
+	// at a time. If more than one button is pressed
+	// at runtime, only the "lowest" button will be read
 	
+	uint32_t input_value;
+	for (int i = 0; i < 4; i++) {
+		// isolate input bit by shifting to zero position
+		input_value = button[i].GPIO->IDR >> button[i].pin;
+		input_value = ~input_value; // active low buttons
+		input_value &= 1;
+		
+		if (input_value == 1) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+void detect_input_global(int trigger) {
+	// if trigger is set to non-zero, input_global
+	// will only update on button presses and will
+	// not update for no-input state
+	
+	uint32_t input_value;
+	for (int i = 0; i < 4; i++) {
+		// isolate input bit by shifting to zero position
+		input_value = button[i].GPIO->IDR >> button[i].pin;
+		input_value = ~input_value; // active low buttons
+		input_value &= 1;
+		
+		if (input_value == 1) {
+			input_global = i;
+			return;
+		}
+	}
+	if (trigger == 0) {
+		input_global = -1;
+	}
+	return;
+}
+
+
+int timer_interruptable(uint32_t max_time) {
+	// returns 1 if user inputs value
+	// else returns 0 if max_time elapsed
+	// without input from user
 	return 1;
 }
+
+
+
 
 
 void write_input_to_output(GPIO_TypeDef* GPIO_in, 
@@ -163,6 +219,7 @@ void initialize_ports(void) {
 
 int main(void) {
 	
+	time_t seed_timer = time(NULL);
 	initialize_ports();
 	
 	// statically bind each LED GPIO port and pin
@@ -175,13 +232,41 @@ int main(void) {
 	led[3].GPIO = GPIOB;
 	led[3].pin = 0;
 	
-	delay(4000);
-	delay(40000);
+	// statically bind each button and pin
+	button[0].GPIO = GPIOB;
+	button[0].pin = 4;
+	button[1].GPIO = GPIOB;
+	button[1].pin = 6;
+	button[2].GPIO = GPIOB;
+	button[2].pin = 8;
+	button[3].GPIO = GPIOB;
+	button[3].pin = 9;
 	
-	blink(0, 400000);
-	blink(1, 4000);
-	blink(2, 400000);
-	blink(3, 4000);
+	uint32_t blink_speed = 800;
+	
+	//int user_input = -1;
+	while (input_global == -1) {
+		blink(0, blink_speed);
+		blink(1, blink_speed);
+		blink(2, blink_speed);
+		blink(3, blink_speed);
+		blink(2, blink_speed);
+		blink(1, blink_speed);
+		detect_input_global(1);
+	}
+	
+	// seed random number generator
+	// TODO: convert to generic counter
+	srand((uint32_t)(difftime(seed_timer, time(NULL))));
+	
+	int random = 0;
+	// for a while, blink random lights
+	for (int i = 0; i < 10; i++) {
+		random = rand(); // collect upper 2 bits of RAND_MAX
+		random >>= 29;
+		random &= 0x3;
+		blink(random, 3000);
+	}
 	
 	while (1) {
 	
