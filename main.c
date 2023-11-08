@@ -7,6 +7,47 @@
 #include "main.h"
 //#include "STM32F103RB.h"
 
+static volatile struct {
+	GPIO_TypeDef* GPIO;
+	int pin;
+} led[4];
+
+
+void delay(uint32_t delay_value) {
+	uint32_t count = 0;
+	uint32_t inner_count = 0;
+	uint32_t internal_delay = delay_value;
+	
+	while (count < delay_value) {
+		while (inner_count < internal_delay) {
+			inner_count++;
+		}
+		inner_count = 0;
+		count++;
+	}
+}
+
+// power on LED (0, 1, 2, or 3) for specified duration
+void blink(int led_number, uint32_t duration) {
+	if (led_number < 0 || led_number > 3) { // illegal values
+		return;
+	}
+	
+	led[led_number].GPIO->ODR |= (1u << led[led_number].pin);
+	delay(duration);
+	led[led_number].GPIO->ODR &= ~(1u << led[led_number].pin);
+
+}
+
+
+// returns 1 if user inputs value
+// else returns 0 if max_time elapsed
+// without input from user
+int timer_interruptable(uint32_t max_time) {
+	
+	return 1;
+}
+
 
 void write_input_to_output(GPIO_TypeDef* GPIO_in, 
 														GPIO_TypeDef* GPIO_out, 
@@ -97,28 +138,50 @@ void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number) {
 }
 
 
-int main(void) {
-	
-	// enable clock for ports A, B, C, D
+void initialize_ports(void) {
+	// enable clock for ports A, B, C
 	RCC->APB2ENR |= (1u << 2) | (1u << 3) | (1u << 4); // set bits 2, 3, 4, 5 HIGH
 
 	// enable on-board button/LED control
 	enable_GPIO_output(GPIOA, 5); 	// green LED on STM32F103RB board
 	enable_GPIO_input(GPIOC, 13); 	// blue button on STM32F103RB board
 	
-	// set port A pins 0, 1, and 4
-	// set port B pin 0 to output
-	enable_GPIO_output(GPIOA, 0);		// board LEDs
+	// enable output ports for board LEDs
+	enable_GPIO_output(GPIOA, 0);
 	enable_GPIO_output(GPIOA, 1);
 	enable_GPIO_output(GPIOA, 4);
 	enable_GPIO_output(GPIOB, 0);
 
 	
-	// set port B4, 6, 8, and 9 to input
+	// enable input ports for board buttons
 	enable_GPIO_input(GPIOB, 4); // black button
 	enable_GPIO_input(GPIOB, 6); // red
 	enable_GPIO_input(GPIOB, 8); // blue
 	enable_GPIO_input(GPIOB, 9); // green
+}
+
+
+int main(void) {
+	
+	initialize_ports();
+	
+	// statically bind each LED GPIO port and pin
+	led[0].GPIO = GPIOA;
+	led[0].pin = 0;
+	led[1].GPIO = GPIOA;
+	led[1].pin = 1;
+	led[2].GPIO = GPIOA;
+	led[2].pin = 4;
+	led[3].GPIO = GPIOB;
+	led[3].pin = 0;
+	
+	delay(4000);
+	delay(40000);
+	
+	blink(0, 400000);
+	blink(1, 4000);
+	blink(2, 400000);
+	blink(3, 4000);
 	
 	while (1) {
 	
