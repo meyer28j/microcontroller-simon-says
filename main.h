@@ -26,7 +26,7 @@ void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number);
 													
 void initialize_ports(void);
 
-extern int globalCounter; 
+extern int seed_counter; 
 													
 extern int input_global;
 													

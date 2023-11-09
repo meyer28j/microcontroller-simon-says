@@ -6,6 +6,10 @@
 // 0-3 = corresponding button was pressed
 int input_global = -1;	
 
+// regularly incremented as program runs
+// to produce pseudo-random number for srand()
+int seed_counter = 0;
+
 static volatile struct {
 	GPIO_TypeDef* GPIO;
 	int pin;
@@ -25,6 +29,7 @@ void delay(uint32_t volatile delay_value) {
 	while (count < delay_value) {
 		while (inner_count < internal_delay) {
 			inner_count++;
+			seed_counter++;
 		}
 		inner_count = 0;
 		count++;
@@ -233,7 +238,6 @@ void initialize_ports(void) {
 
 int main(void) {
 	
-	time_t seed_timer = time(NULL);
 	initialize_ports();
 	
 	// statically bind each LED GPIO port and pin
@@ -256,9 +260,9 @@ int main(void) {
 	button[3].GPIO = GPIOB;
 	button[3].pin = 9;
 	
-	uint32_t blink_speed = 800;
+	uint32_t blink_speed = 600;
 	
-	//int user_input = -1;
+	/*
 	while (input_global == -1) {
 		blink(0, blink_speed);
 		blink(1, blink_speed);
@@ -268,24 +272,38 @@ int main(void) {
 		blink(1, blink_speed);
 		detect_input_global(1);
 	}
+	*/
 	
-	// display input to stop intro
-	// FOR TEST PURPOSES
-	blink(input_global, 2000);
-	delay(2000);
-	blink(input_global, 2000);
-	delay(2000);
-	blink(input_global, 2000);
-	delay(2000);
+	while (input_global == -1) {
+		for (int i = 0; i < 4; i++) {
+			blink(i, blink_speed);
+			detect_input_global(1);
+			seed_counter++;
+			if (input_global != -1) { // stop on user input
+				break;
+			}
+		}
+		if (input_global != -1) { // don't start second loop
+				break;
+			}
+		for (int i = 2; i > 0; i--) {
+			blink(i, blink_speed);
+			detect_input_global(1);
+			seed_counter++;
+			if (input_global != -1) { // stop on user input
+				break;
+			}
+		}
+	}
+
 	
 	// seed random number generator
-	// TODO: convert to generic counter
-	srand((unsigned)(difftime(seed_timer, time(NULL))));
+	srand((unsigned)seed_counter);
 	
 
 	int light_sequence[10];
 	// populate list of 10 random numbers from 0-3
-	// this will represent the game sequence
+	// to represent the game sequence
 	for (int i = 0; i < 10; i++) {
 		// collect numbers between 0-3 by shifting
 		// bits 29 and 30 of rand() to positions 0 and 1
@@ -301,8 +319,8 @@ int main(void) {
 		//random = rand(); // collect upper 2 bits of RAND_MAX
 		//random >>= 29;
 		//random &= 0x3;
-		//blink(random, 2000);
-		//delay(2000);
+		blink(light_sequence[round], 2000);
+		delay(2000);
 		
 		// since our input detection is only for an instant,
 		// it must be done very often to ensure smooth gameplay
@@ -314,9 +332,16 @@ int main(void) {
 		
 		// must also make sure player doesn't "double dip" their
 		// answer in the short time window available, so each inner
-		// loop should also strictly check for NO INPUT or RIGHT INPUT
+		// loop should also strictly check for INCORRECT INPUT
 		// and if the user enters any wrong input, it cancels the game
 		// immediately without allowing for another input cycle
+		
+		// over a time period of chopped up delays
+		// collect user input between each delay chop into an array
+		// clearing the value in the meantime
+		// i.e. collect user input as 2, then reset input to -1
+		// discard any -1 answers
+		
 	}
 	
 	// lose sequence
@@ -327,7 +352,6 @@ int main(void) {
 	}
 	// display score
 	// convert round to binary
-	// remember: if x < y, x % y == x
 	int light_score[4] = {0, 0, 0, 0};
 	int light_count = 0;
 	
@@ -351,7 +375,6 @@ int main(void) {
 		light_score[light_count] = 0; // enable 1s position LED
 		light_count++;
 	}
-	//reverse(light_score);
 	for (int i = 0; i < 4; i++) {
 		blink_multi(light_score, light_count, 2000);
 		delay(2000);
