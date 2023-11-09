@@ -7,11 +7,13 @@ void delay(uint32_t volatile delay_value);
 
 void blink(int led, uint32_t duration);
 
+void blink_multi(int led_number[], int array_size, uint32_t duration);
+
 int detect_input(void);
 
 void detect_input_global(int trigger);
 
-int timer_interruptable(uint32_t max_time);
+int timer_button_interrupt(uint32_t max_time);
 
 void write_input_to_output(GPIO_TypeDef* GPIO_in, 
 													GPIO_TypeDef* GPIO_out, 
