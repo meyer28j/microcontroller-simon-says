@@ -24,17 +24,36 @@ static volatile struct {
 void delay(uint32_t volatile delay_value) {
 	uint32_t volatile count = 0;
 	uint32_t volatile inner_count = 0;
-	uint32_t volatile internal_delay = delay_value;
+	//uint32_t volatile internal_delay = delay_value;
 	
 	while (count < delay_value) {
-		while (inner_count < internal_delay) {
+		while (inner_count < delay_value) { //internal_delay) {
 			inner_count++;
-			seed_counter++;
+			//seed_counter++;
 		}
 		inner_count = 0;
 		count++;
 	}
 }
+
+
+void led_on(int led_number) {
+	if (led_number < 0 || led_number > 3) {
+		return;
+	}
+	led[led_number].GPIO->ODR |= (1u << led[led_number].pin);
+	return;
+}
+
+
+void led_off(int led_number) {
+	if (led_number < 0 || led_number > 3) {
+		return;
+	}
+	led[led_number].GPIO->ODR &= ~(1u << led[led_number].pin);
+	return;
+}
+
 
 
 void blink(int led_number, uint32_t duration) {
@@ -43,9 +62,11 @@ void blink(int led_number, uint32_t duration) {
 		return;
 	}
 	
-	led[led_number].GPIO->ODR |= (1u << led[led_number].pin);
+	//led[led_number].GPIO->ODR |= (1u << led[led_number].pin);
+	led_on(led_number);
 	delay(duration);
-	led[led_number].GPIO->ODR &= ~(1u << led[led_number].pin);
+	//led[led_number].GPIO->ODR &= ~(1u << led[led_number].pin);
+	led_off(led_number);
 
 }
 
@@ -55,11 +76,15 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 	// e.g. [1, 3] would turn on the 2nd and 4th LEDs
 	// e.g. [0, 2, 3] would turn on LEDs 1, 3, and 4
 	for (int i = 0; i < array_size; i++) {
-		led[led_number[i]].GPIO->ODR |= (1u << led[led_number[i]].pin);
+		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
+			led[led_number[i]].GPIO->ODR |= (1u << led[led_number[i]].pin);
+		}
 	}
 	delay(duration);
 	for (int i = 0; i < array_size; i++) {
-		led[led_number[i]].GPIO->ODR &= ~(1u << led[led_number[i]].pin);
+		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
+			led[led_number[i]].GPIO->ODR &= ~(1u << led[led_number[i]].pin);
+		}
 	}
 }
 
@@ -114,13 +139,46 @@ void detect_input_global(int trigger) {
 }
 
 
-int timer_button_interrupt(uint32_t max_time) {
+int timer_button_interrupt(uint32_t volatile max_time) {
 	// returns button value of user inputs value
 	// else returns 0 if max_time elapsed
 	// without input from user
 	
-	// same function as delay, but has 
-	return 1;
+	// similar function as delay() but
+	// returns user input (or lack thereof)
+	
+	uint32_t volatile count = 0;
+	uint32_t volatile inner_count = 0;
+	
+	// reset input_global, since it's used
+	// as our exit condition
+	input_global = -1;
+	
+	while (count < max_time) {
+		while (inner_count < max_time) {
+			inner_count++;
+		}
+		inner_count = 0;
+		count++;
+		detect_input_global(1);
+		if (input_global != -1) { // placed on outer function so not as expensive
+			return input_global;
+		}
+	}
+	return -1;
+}
+
+
+int* generate_light_sequence(int size) {
+	int sequence[size];
+	for (int i = 0; i < size; i++) {
+		// collect numbers between 0-3 by shifting
+		// bits 29 and 30 of rand() to positions 0 and 1
+		// since we only need 2 bits to represent 4 numbers
+		sequence[i] = (rand() >> 29) & 0x3;
+	}
+	int* array_pointer = sequence;
+	return array_pointer;
 }
 
 
@@ -239,7 +297,7 @@ void initialize_ports(void) {
 int main(void) {
 	
 	initialize_ports();
-	
+		
 	// statically bind each LED GPIO port and pin
 	led[0].GPIO = GPIOA;
 	led[0].pin = 0;
@@ -249,6 +307,9 @@ int main(void) {
 	led[2].pin = 4;
 	led[3].GPIO = GPIOB;
 	led[3].pin = 0;
+	
+	int all_leds[4] = {0, 1, 2, 3};
+
 	
 	// statically bind each button and pin
 	button[0].GPIO = GPIOB;
@@ -274,8 +335,9 @@ int main(void) {
 	}
 	*/
 	
-	while (input_global == -1) {
-		for (int i = 0; i < 4; i++) {
+	
+	while (input_global == -1) { // until user input
+		for (int i = 0; i < 4; i++) { // flash lights right-to-left
 			blink(i, blink_speed);
 			detect_input_global(1);
 			seed_counter++;
@@ -283,10 +345,10 @@ int main(void) {
 				break;
 			}
 		}
-		if (input_global != -1) { // don't start second loop
+		if (input_global != -1) { // don't start second loop if user input
 				break;
 			}
-		for (int i = 2; i > 0; i--) {
+		for (int i = 2; i > 0; i--) { // flash lights left-to-right
 			blink(i, blink_speed);
 			detect_input_global(1);
 			seed_counter++;
@@ -295,33 +357,29 @@ int main(void) {
 			}
 		}
 	}
-
+	
 	
 	// seed random number generator
 	srand((unsigned)seed_counter);
 	
 
-	int light_sequence[10];
+	int round;	
+	int round_total = 10;
+	
 	// populate list of 10 random numbers from 0-3
 	// to represent the game sequence
-	for (int i = 0; i < 10; i++) {
-		// collect numbers between 0-3 by shifting
-		// bits 29 and 30 of rand() to positions 0 and 1
-		// since we only need 2 bits to represent 4 numbers
-		light_sequence[i] = (rand() >> 29) & 0x3;
-	}
+	int* light_sequence;
+	light_sequence = generate_light_sequence(round_total);
 	
-	//int random = 0; // represents random number between 0 and 3
-	int winning = 1; // represents non-fail condition; set to 0 on mistake
-	int round;	
+	// allocate memory for tracking user input
+	int input_sequence[round_total];
+
+	// boolean to check incorrect input for game-fail
+	int winning = 1; 
 	
-	for (round = 0; round < 10 && winning == 1; round++) {
-		//random = rand(); // collect upper 2 bits of RAND_MAX
-		//random >>= 29;
-		//random &= 0x3;
-		blink(light_sequence[round], 2000);
-		delay(2000);
-		
+	// length of time user has to push a button
+	uint32_t input_window = 4000;
+	
 		// since our input detection is only for an instant,
 		// it must be done very often to ensure smooth gameplay
 		// 
@@ -330,68 +388,115 @@ int main(void) {
 		// check and trigger user input every 100 units
 		// -- can do this with inner loop
 		
-		// must also make sure player doesn't "double dip" their
-		// answer in the short time window available, so each inner
-		// loop should also strictly check for INCORRECT INPUT
-		// and if the user enters any wrong input, it cancels the game
-		// immediately without allowing for another input cycle
+	
+	// BEGIN GAME LOOP
+	for (round = 1; round <= round_total && winning == 1; round++) {
+		delay(2000); // breathing room
+
+
+		// TEST RANDOM SEQUENCE GENERATION
+		//blink(light_sequence[round], 2000);
+		//delay(2000);
 		
-		// over a time period of chopped up delays
-		// collect user input between each delay chop into an array
-		// clearing the value in the meantime
-		// i.e. collect user input as 2, then reset input to -1
-		// discard any -1 answers
+		// show player pattern they need to match
+		// for this round
+		for (int i = 0; i < round; i++) {
+			blink(light_sequence[i], 2000);
+			delay(500);
+		}
 		
+		// collect user input in order
+		for (int i = 0; i < round; i++) {
+			// must also make sure player doesn't "double dip" their
+			// answer in the short time window available, so each inner
+			// loop should also strictly check for INCORRECT INPUT
+			
+			input_sequence[i] = timer_button_interrupt(input_window);		
+			
+			// flash light user entered for feedback
+			blink(input_sequence[i], 500);
+			delay(500);
+			
+			// if the user enters any wrong (or no) input, it cancels the game
+			// immediately without allowing for another input cycle
+			if (input_sequence[i] != light_sequence[i]) { 
+				winning = 0;
+			} 
+		}
+		
+		delay(1000);
+		// end of round
+		// clear any user input so they are 
+		// required to enter it all again
+		for (int i = 0; i < round; i++) {
+			input_sequence[i] = -1;
+		}
+		if (winning == 1) {
+			// indicate end of round
+			blink_multi(all_leds, 4, 1000);
+			delay(1000);
+			blink_multi(all_leds, 4, 1000);
+			delay(1000);
+			blink_multi(all_leds, 4, 1000);
+			delay(1000);
+			
+		}
+	}
+		
+	if (winning == 0) {
+		// lose sequence
+		for (int i = 0; i < 10; i++) {
+			// flash one light
+			blink(3, 1000);
+			delay(1000);
+		}
+		// display score
+		// convert round to binary
+		int light_score[4] = {-1, -1, -1, -1};
+		int light_count = 0;
+		round -= 2; // don't count last round, plus handle offset from starting at 1
+		
+		if (round >= 8) {
+			round -= 8;
+			light_score[light_count] = 3; // enable 8s position LED
+			light_count++;
+		}
+		if (round >= 4) {
+			round -= 4;
+			light_score[light_count] = 2; // enable 4s position LED
+			light_count++;
+		}
+		if (round >= 2) {
+			round -= 2;
+			light_score[light_count] = 1; // enable 2s position LED
+			light_count++;
+		}
+		if (round >= 1) {
+			round -= 1;
+			light_score[light_count] = 0; // enable 1s position LED
+			light_count++;
+		}
+		for (int i = 0; i < 4; i++) {
+			// turn on LEDs representing score
+			led[light_score[i]].GPIO->ODR |= (1u << led[light_score[i]].pin);
+		}
+		return 1; // end program with final score displayed
+		/*
+		while (1) {
+			delay(1000);
+			blink_multi(light_score, light_count, 2000);
+			delay(2000);
+		}
+		*/
+		// END LOSE SEQUENCE
 	}
 	
-	// lose sequence
-	for (int i = 0; i < 10; i++) {
-		// flash one light
-		blink(3, 1000);
+	while (1) {
+		// win sequence
+		blink_multi(all_leds, 4, 1000);
 		delay(1000);
 	}
-	// display score
-	// convert round to binary
-	int light_score[4] = {0, 0, 0, 0};
-	int light_count = 0;
-	
-	if (round >= 8) {
-		round -= 8;
-		light_score[light_count] = 3; // enable 8s position LED
-		light_count++;
-	}
-	if (round >= 4) {
-		round -= 4;
-		light_score[light_count] = 2; // enable 4s position LED
-		light_count++;
-	}
-	if (round >= 2) {
-		round -= 2;
-		light_score[light_count] = 1; // enable 2s position LED
-		light_count++;
-	}
-	if (round >= 1) {
-		round -= 1;
-		light_score[light_count] = 0; // enable 1s position LED
-		light_count++;
-	}
-	for (int i = 0; i < 4; i++) {
-		blink_multi(light_score, light_count, 2000);
-		delay(2000);
-	}
-	// END LOSE SEQUENCE
-	
-	
-	// win sequence
-	int all_leds[4] = {0, 1, 2, 3};
-	blink_multi(all_leds, 4, 1000);
-	delay(1000);
-	blink_multi(all_leds, 4, 1000);
-	delay(1000);
-	blink_multi(all_leds, 4, 1000);
-	delay(1000);
-	// END WIN SEQUENCE
-	
+	/*
 	while (1) {
 	
 		write_input_to_output(GPIOC, GPIOA, 13, 5); // on-board button/LED control
@@ -402,6 +507,6 @@ int main(void) {
 		write_input_to_output(GPIOB, GPIOB, 9, 0); // blue button/LED
 		
 	}
-	
+	*/
 	return 0;
 }
