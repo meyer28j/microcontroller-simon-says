@@ -447,7 +447,7 @@ int main(void) {
 		// for this round
 		for (int i = 0; i < round; i++) {
 			blink(light_sequence[i], 2000);
-			delay(500);
+			delay(1000);
 		}
 		
 		// collect user input in order
@@ -456,12 +456,6 @@ int main(void) {
 			
 			// flash light user entered for feedback
 			blink(input_sequence[i], blink_speed);
-			
-			// pause while user is still holding down button
-			while (input_global != -1) {
-				detect_input_global(0);
-				delay(100);
-			}
 			
 			// wait out switch bounce
 			delay(1000);
@@ -494,7 +488,7 @@ int main(void) {
 		
 	// lose sequence
 	if (winning == 0) {
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 20; i++) {
 			// flash one light
 			blink(3, blink_speed);
 			delay(blink_speed);
