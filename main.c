@@ -475,15 +475,6 @@ int main(void) {
 		for (int i = 0; i < round; i++) {
 			input_sequence[i] = -1;
 		}
-		if (winning == 1) {
-			// indicate successful end of round
-			blink_multi(all_leds, 4, blink_speed);
-			delay(1000);
-			blink_multi(all_leds, 4, blink_speed);
-			delay(1000);
-			blink_multi(all_leds, 4, blink_speed);
-			delay(1000);
-		}
 	}
 		
 	// lose sequence
@@ -493,6 +484,8 @@ int main(void) {
 			blink(3, blink_speed);
 			delay(blink_speed);
 		}
+		
+		delay(1000);
 
 		// display score
 		round -= 2; // don't count last round, plus handle offset from starting at 1
