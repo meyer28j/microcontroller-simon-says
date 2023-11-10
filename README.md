@@ -2,7 +2,7 @@
 
 This project emulates the 70's/80's game "Simon" on a microcontroller and breadboard with buttons and LEDs (schematic provided).
 
-![Original Simon Game](res/simon_original.jpg)
+<img src="res/simon_original.jpg" width="600" height="600">
 ![Game Board, Score of 3](res/simon_board.jpg)
 
 
