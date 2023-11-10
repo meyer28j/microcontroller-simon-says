@@ -77,13 +77,15 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 	// e.g. [0, 2, 3] would turn on LEDs 1, 3, and 4
 	for (int i = 0; i < array_size; i++) {
 		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
-			led[led_number[i]].GPIO->ODR |= (1u << led[led_number[i]].pin);
+			//led[led_number[i]].GPIO->ODR |= (1u << led[led_number[i]].pin);
+			led_on(led_number[i]);
 		}
 	}
 	delay(duration);
 	for (int i = 0; i < array_size; i++) {
 		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
-			led[led_number[i]].GPIO->ODR &= ~(1u << led[led_number[i]].pin);
+			//led[led_number[i]].GPIO->ODR &= ~(1u << led[led_number[i]].pin);
+			led_off(led_number[i]);
 		}
 	}
 }
@@ -205,6 +207,12 @@ void write_input_to_output(GPIO_TypeDef* GPIO_in,
 }
 
 
+//void user_enable_led(int button_number) {
+	// enable the corresponding LED for button
+	// the user is pressing indefinitely
+//}
+
+
 void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number) {
 	// enable a specified port as output, 50MHz push-pull
 	// set port MODEx bits to 11 = output, 50MHz
@@ -294,10 +302,7 @@ void initialize_ports(void) {
 }
 
 
-int main(void) {
-	
-	initialize_ports();
-		
+void initialize_leds_buttons(void) {
 	// statically bind each LED GPIO port and pin
 	led[0].GPIO = GPIOA;
 	led[0].pin = 0;
@@ -307,10 +312,7 @@ int main(void) {
 	led[2].pin = 4;
 	led[3].GPIO = GPIOB;
 	led[3].pin = 0;
-	
-	int all_leds[4] = {0, 1, 2, 3};
-
-	
+		
 	// statically bind each button and pin
 	button[0].GPIO = GPIOB;
 	button[0].pin = 4;
@@ -320,24 +322,13 @@ int main(void) {
 	button[2].pin = 8;
 	button[3].GPIO = GPIOB;
 	button[3].pin = 9;
-	
-	uint32_t blink_speed = 600;
-	
-	/*
-	while (input_global == -1) {
-		blink(0, blink_speed);
-		blink(1, blink_speed);
-		blink(2, blink_speed);
-		blink(3, blink_speed);
-		blink(2, blink_speed);
-		blink(1, blink_speed);
-		detect_input_global(1);
-	}
-	*/
-	
-	
-	while (input_global == -1) { // until user input
-		for (int i = 0; i < 4; i++) { // flash lights right-to-left
+
+	return;
+}
+
+
+void display_knight_rider(uint32_t blink_speed) {
+	for (int i = 0; i < 4; i++) { // flash lights right-to-left
 			blink(i, blink_speed);
 			detect_input_global(1);
 			seed_counter++;
@@ -346,7 +337,7 @@ int main(void) {
 			}
 		}
 		if (input_global != -1) { // don't start second loop if user input
-				break;
+				return;
 			}
 		for (int i = 2; i > 0; i--) { // flash lights left-to-right
 			blink(i, blink_speed);
@@ -356,20 +347,67 @@ int main(void) {
 				break;
 			}
 		}
+	return;
+}
+
+
+void display_binary(int number) {
+	// convert number to binary
+		int led_positions[4] = {-1, -1, -1, -1};
+		int led_count = 0;
+		
+		if (number >= 8) {
+			number -= 8;
+			led_positions[led_count] = 3; // enable 8s position LED
+			led_count++;
+		}
+		if (number >= 4) {
+			number -= 4;
+			led_positions[led_count] = 2; // enable 4s position LED
+			led_count++;
+		}
+		if (number >= 2) {
+			number -= 2;
+			led_positions[led_count] = 1; // enable 2s position LED
+			led_count++;
+		}
+		if (number >= 1) {
+			number -= 1;
+			led_positions[led_count] = 0; // enable 1s position LED
+			led_count++;
+		}
+		for (int i = 0; i < 4; i++) {
+			// turn on LEDs representing score
+			led_on(led_positions[i]);
+		}
+		return;
+}
+
+
+
+int main(void) {
+	
+	initialize_ports();
+	initialize_leds_buttons();
+		
+	int all_leds[4] = {0, 1, 2, 3};
+
+	uint32_t blink_speed = 600;
+	
+	while (input_global == -1) { // until user input
+		display_knight_rider(blink_speed);
 	}
 	
-	
+
 	// seed random number generator
 	srand((unsigned)seed_counter);
-	
 
 	int round;	
 	int round_total = 10;
 	
-	// populate list of 10 random numbers from 0-3
+	// populate list of random numbers from 0-3
 	// to represent the game sequence
-	int* light_sequence;
-	light_sequence = generate_light_sequence(round_total);
+	int* light_sequence = generate_light_sequence(round_total);
 	
 	// allocate memory for tracking user input
 	int input_sequence[round_total];
@@ -380,23 +418,10 @@ int main(void) {
 	// length of time user has to push a button
 	uint32_t input_window = 4000;
 	
-		// since our input detection is only for an instant,
-		// it must be done very often to ensure smooth gameplay
-		// 
-		// so the "time window" for the user input must be chopped
-		// up very finely, such that a window of 2000 units would
-		// check and trigger user input every 100 units
-		// -- can do this with inner loop
-		
 	
 	// BEGIN GAME LOOP
 	for (round = 1; round <= round_total && winning == 1; round++) {
-		delay(2000); // breathing room
-
-
-		// TEST RANDOM SEQUENCE GENERATION
-		//blink(light_sequence[round], 2000);
-		//delay(2000);
+		delay(2000); // breathing room at start of round
 		
 		// show player pattern they need to match
 		// for this round
@@ -407,20 +432,25 @@ int main(void) {
 		
 		// collect user input in order
 		for (int i = 0; i < round; i++) {
-			// must also make sure player doesn't "double dip" their
-			// answer in the short time window available, so each inner
-			// loop should also strictly check for INCORRECT INPUT
-			
 			input_sequence[i] = timer_button_interrupt(input_window);		
 			
 			// flash light user entered for feedback
-			blink(input_sequence[i], 500);
-			delay(500);
+			blink(input_sequence[i], blink_speed);
+			
+			// pause while user is still holding down button
+			while (input_global != -1) {
+				detect_input_global(0);
+				delay(100);
+			}
+			
+			// wait out switch bounce
+			delay(1000);
 			
 			// if the user enters any wrong (or no) input, it cancels the game
 			// immediately without allowing for another input cycle
 			if (input_sequence[i] != light_sequence[i]) { 
 				winning = 0;
+				break;
 			} 
 		}
 		
@@ -432,81 +462,36 @@ int main(void) {
 			input_sequence[i] = -1;
 		}
 		if (winning == 1) {
-			// indicate end of round
-			blink_multi(all_leds, 4, 1000);
+			// indicate successful end of round
+			blink_multi(all_leds, 4, blink_speed);
 			delay(1000);
-			blink_multi(all_leds, 4, 1000);
+			blink_multi(all_leds, 4, blink_speed);
 			delay(1000);
-			blink_multi(all_leds, 4, 1000);
+			blink_multi(all_leds, 4, blink_speed);
 			delay(1000);
-			
 		}
 	}
 		
+	// lose sequence
 	if (winning == 0) {
-		// lose sequence
 		for (int i = 0; i < 10; i++) {
 			// flash one light
-			blink(3, 1000);
-			delay(1000);
+			blink(3, blink_speed);
+			delay(blink_speed);
 		}
+
 		// display score
-		// convert round to binary
-		int light_score[4] = {-1, -1, -1, -1};
-		int light_count = 0;
 		round -= 2; // don't count last round, plus handle offset from starting at 1
-		
-		if (round >= 8) {
-			round -= 8;
-			light_score[light_count] = 3; // enable 8s position LED
-			light_count++;
-		}
-		if (round >= 4) {
-			round -= 4;
-			light_score[light_count] = 2; // enable 4s position LED
-			light_count++;
-		}
-		if (round >= 2) {
-			round -= 2;
-			light_score[light_count] = 1; // enable 2s position LED
-			light_count++;
-		}
-		if (round >= 1) {
-			round -= 1;
-			light_score[light_count] = 0; // enable 1s position LED
-			light_count++;
-		}
-		for (int i = 0; i < 4; i++) {
-			// turn on LEDs representing score
-			led[light_score[i]].GPIO->ODR |= (1u << led[light_score[i]].pin);
-		}
+		display_binary(round);
 		return 1; // end program with final score displayed
-		/*
-		while (1) {
-			delay(1000);
-			blink_multi(light_score, light_count, 2000);
-			delay(2000);
-		}
-		*/
-		// END LOSE SEQUENCE
 	}
 	
+	// not losing and the game is over?
+	// we found ourselves a winner!!!
 	while (1) {
-		// win sequence
-		blink_multi(all_leds, 4, 1000);
-		delay(1000);
+		blink_multi(all_leds, 4, blink_speed * 2);
+		delay(blink_speed * 2);
 	}
-	/*
-	while (1) {
 	
-		write_input_to_output(GPIOC, GPIOA, 13, 5); // on-board button/LED control
-		
-		write_input_to_output(GPIOB, GPIOA, 4, 0); // black button/LED
-		write_input_to_output(GPIOB, GPIOA, 6, 1); // red button/LED
-		write_input_to_output(GPIOB, GPIOA, 8, 4); // green button/LED
-		write_input_to_output(GPIOB, GPIOB, 9, 0); // blue button/LED
-		
-	}
-	*/
 	return 0;
 }
