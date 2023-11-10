@@ -17,7 +17,9 @@ int detect_input(void);
 
 void detect_input_global(int trigger);
 
-int timer_button_interrupt(uint32_t max_time);
+int timer_button_interrupt(uint32_t volatile max_time);
+
+int timer_button_interrupt_with_seeding(uint32_t volatile max_time);
 
 int* generate_light_sequence(int size);
 

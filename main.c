@@ -61,11 +61,8 @@ void blink(int led_number, uint32_t duration) {
 	if (led_number < 0 || led_number > 3) { // illegal values
 		return;
 	}
-	
-	//led[led_number].GPIO->ODR |= (1u << led[led_number].pin);
-	led_on(led_number);
+		led_on(led_number);
 	delay(duration);
-	//led[led_number].GPIO->ODR &= ~(1u << led[led_number].pin);
 	led_off(led_number);
 
 }
@@ -77,14 +74,12 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 	// e.g. [0, 2, 3] would turn on LEDs 1, 3, and 4
 	for (int i = 0; i < array_size; i++) {
 		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
-			//led[led_number[i]].GPIO->ODR |= (1u << led[led_number[i]].pin);
 			led_on(led_number[i]);
 		}
 	}
 	delay(duration);
 	for (int i = 0; i < array_size; i++) {
 		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
-			//led[led_number[i]].GPIO->ODR &= ~(1u << led[led_number[i]].pin);
 			led_off(led_number[i]);
 		}
 	}
@@ -163,9 +158,38 @@ int timer_button_interrupt(uint32_t volatile max_time) {
 		inner_count = 0;
 		count++;
 		detect_input_global(1);
-		if (input_global != -1) { // placed on outer function so not as expensive
+		if (input_global != -1) { // placed on outer loop so not as expensive
 			return input_global;
 		}
+	}
+	return -1;
+}
+
+
+int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
+	// special version of timer_button_interrupt()
+	// that rapidly increments the random seed while
+	// running to provide a pseudo-random number
+	
+	uint32_t volatile count = 0;
+	uint32_t volatile inner_count = 0;
+	
+	// reset input_global, since it's used
+	// as our exit condition
+	input_global = -1;
+	
+	while (count < max_time) {
+		while (inner_count < max_time) {
+			inner_count++;
+			seed_counter++;
+			detect_input_global(1);
+		if (input_global != -1) { // placed on inner loop to poll input as frequently as possible
+			return input_global;
+		}
+		}
+		inner_count = 0;
+		count++;
+
 	}
 	return -1;
 }
@@ -205,12 +229,6 @@ void write_input_to_output(GPIO_TypeDef* GPIO_in,
 	
 	}	// if not equal, do nothing
 }
-
-
-//void user_enable_led(int button_number) {
-	// enable the corresponding LED for button
-	// the user is pressing indefinitely
-//}
 
 
 void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number) {
@@ -328,25 +346,29 @@ void initialize_leds_buttons(void) {
 
 
 void display_knight_rider(uint32_t blink_speed) {
-	for (int i = 0; i < 4; i++) { // flash lights right-to-left
-			blink(i, blink_speed);
-			detect_input_global(1);
-			seed_counter++;
-			if (input_global != -1) { // stop on user input
+	// function runs indefinitely until user presses a button
+	int input = -1;
+	while (input == -1) {
+		for (int i = 0; i < 4; i++) { // flash lights right-to-left
+			led_on(i);
+			input = timer_button_interrupt_with_seeding(blink_speed);
+			led_off(i);
+			if (input != -1) { // stop on user input
 				break;
 			}
 		}
-		if (input_global != -1) { // don't start second loop if user input
-				return;
+		if (input != -1) { // don't start second loop if user input
+				break;
 			}
 		for (int i = 2; i > 0; i--) { // flash lights left-to-right
-			blink(i, blink_speed);
-			detect_input_global(1);
-			seed_counter++;
-			if (input_global != -1) { // stop on user input
+			led_on(i);
+			input = timer_button_interrupt_with_seeding(blink_speed);
+			led_off(i);
+			if (input != -1) { // stop on user input
 				break;
 			}
 		}
+	}
 	return;
 }
 
@@ -394,10 +416,8 @@ int main(void) {
 
 	uint32_t blink_speed = 600;
 	
-	while (input_global == -1) { // until user input
-		display_knight_rider(blink_speed);
-	}
-	
+	// runs indefinitely until user presses a button
+	display_knight_rider(blink_speed  / 3);
 
 	// seed random number generator
 	srand((unsigned)seed_counter);
