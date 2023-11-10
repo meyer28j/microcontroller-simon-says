@@ -2,6 +2,7 @@
 
 This project emulates the 70's/80's game "Simon" on a microcontroller and breadboard with buttons and LEDs (schematic provided).
 
+![Original Simon Game](res/simon_original.jpg)
 ![Game Board, Score of 3](res/simon_board.jpg)
 
 
@@ -9,11 +10,11 @@ This project emulates the 70's/80's game "Simon" on a microcontroller and breadb
 
 ### Start
 
-After power-on, press any button to start the game. In the meantime, a show of lights will be displayed a la Knight Rider.
+After power-on, press any button to start the game. In the meantime, a show of lights will be displayed in the style of "Knight Rider."
 
 ### The Game
 
-Once the game starts, a sequence of lights will be displayed one at a time which the player must repeat by pushing the corresponding buttons in order. The game starts with only one light, but adds another light (up to 10) to the sequence each time the player successfully repeats the pattern.
+Once the game starts, a sequence of lights will be displayed one at a time which the player must repeat by pushing the corresponding buttons in order. The game starts with only one light, but adds another light to the sequence (up to 10 in a row) each time the player successfully repeats the pattern.
 
 ### Game Over
 
