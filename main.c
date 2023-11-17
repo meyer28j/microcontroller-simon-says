@@ -195,6 +195,7 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 }
 
 
+
 int* generate_light_sequence(int size) {
 	int sequence[size];
 	for (int i = 0; i < size; i++) {
@@ -417,13 +418,13 @@ int main(void) {
 	uint32_t blink_speed = 600;
 	
 	// runs indefinitely until user presses a button
-	display_knight_rider(blink_speed  / 3);
+	display_knight_rider(blink_speed  / 2);
 
 	// seed random number generator
 	srand((unsigned)seed_counter);
 
 	int round;	
-	int round_total = 10;
+	int round_total = 5;
 	
 	// populate list of random numbers from 0-3
 	// to represent the game sequence
@@ -458,7 +459,7 @@ int main(void) {
 			blink(input_sequence[i], blink_speed);
 			
 			// wait out switch bounce
-			delay(1000);
+			delay(1500);
 			
 			// if the user enters any wrong (or no) input, it cancels the game
 			// immediately without allowing for another input cycle
