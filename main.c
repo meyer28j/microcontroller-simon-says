@@ -424,7 +424,7 @@ int main(void) {
 	srand((unsigned)seed_counter);
 
 	int round;	
-	int round_total = 5;
+	int round_total = 10;
 	
 	// populate list of random numbers from 0-3
 	// to represent the game sequence
