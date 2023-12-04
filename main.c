@@ -5,6 +5,7 @@
 // to produce pseudo-random number for srand()
 int seed_counter = 0;
 
+// tie together GPIO address and pin for LEDs and buttons
 static volatile struct {
 	GPIO_TypeDef* GPIO;
 	int pin;
@@ -55,7 +56,7 @@ void blink(int led_number, uint32_t duration) {
 	if (led_number < 0 || led_number > 3) { // illegal values
 		return;
 	}
-		led_on(led_number);
+	led_on(led_number);
 	delay(duration);
 	led_off(led_number);
 }
@@ -227,23 +228,7 @@ void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number) {
 void initialize(void) {
 	// enable clock for ports A, B, C
 	RCC->APB2ENR |= (1u << 2) | (1u << 3) | (1u << 4); // set bits 2, 3, 4, 5 HIGH
-
-	// enable on-board button/LED control
-	enable_GPIO_output(GPIOA, 5); 	// green LED on STM32F103RB board
-	enable_GPIO_input(GPIOC, 13); 	// blue button on STM32F103RB board
 	
-	// enable output ports for board LEDs
-	enable_GPIO_output(GPIOA, 0);
-	enable_GPIO_output(GPIOA, 1);
-	enable_GPIO_output(GPIOA, 4);
-	enable_GPIO_output(GPIOB, 0);
-
-	// enable input ports for board buttons
-	enable_GPIO_input(GPIOB, 4); // black button
-	enable_GPIO_input(GPIOB, 6); // red
-	enable_GPIO_input(GPIOB, 8); // blue
-	enable_GPIO_input(GPIOB, 9); // green
-
 	// statically bind each LED GPIO port and pin
 	led[0].GPIO = GPIOA;
 	led[0].pin = 0;
@@ -263,6 +248,14 @@ void initialize(void) {
 	button[2].pin = 8;
 	button[3].GPIO = GPIOB;
 	button[3].pin = 9;
+
+
+  // enable output ports for board LEDs
+	// enable input ports for board buttons
+	for (int i = 0; i < 4; i++) {
+		enable_GPIO_output(led[i].GPIO, led[i].pin);
+		enable_GPIO_input(button[i].GPIO, button[i].pin);
+	}
 
 	return;
 }
