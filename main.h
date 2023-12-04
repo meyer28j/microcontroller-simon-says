@@ -20,14 +20,7 @@ void detect_input_global(int trigger);
 int timer_button_interrupt(uint32_t volatile max_time);
 
 int timer_button_interrupt_with_seeding(uint32_t volatile max_time);
-
-int* generate_light_sequence(int size);
-
-void write_input_to_output(GPIO_TypeDef* GPIO_in, 
-													GPIO_TypeDef* GPIO_out, 
-													int pin_in, 
-													int pin_out);
-													
+								
 void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number);
 
 void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number);

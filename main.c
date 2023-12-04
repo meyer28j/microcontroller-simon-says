@@ -55,7 +55,6 @@ void led_off(int led_number) {
 }
 
 
-
 void blink(int led_number, uint32_t duration) {
 	// power on LED (0, 1, 2, or 3) for specified duration
 	if (led_number < 0 || led_number > 3) { // illegal values
@@ -64,7 +63,6 @@ void blink(int led_number, uint32_t duration) {
 		led_on(led_number);
 	delay(duration);
 	led_off(led_number);
-
 }
 
 
@@ -195,41 +193,7 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 }
 
 
-
-int* generate_light_sequence(int size) {
-	int sequence[size];
-	for (int i = 0; i < size; i++) {
-		// collect numbers between 0-3 by shifting
-		// bits 29 and 30 of rand() to positions 0 and 1
-		// since we only need 2 bits to represent 4 numbers
-		sequence[i] = (rand() >> 29) & 0x3;
-	}
-	int* array_pointer = sequence;
-	return array_pointer;
-}
-
-
-void write_input_to_output(GPIO_TypeDef* GPIO_in, 
 														GPIO_TypeDef* GPIO_out, 
-														int pin_in, 
-														int pin_out) {
-	
-	// isolate input bit from GPIO_in
-	uint32_t input_bit = GPIO_in->IDR;
-	input_bit >>= (pin_in - pin_out); 	// shift input bit to output bit position
-	input_bit &= (1u << pin_out); 			// isolate input bit in output bit position
-	
-	// isolate output bit from GPIO_out
-	uint32_t output_bit = GPIO_out->ODR;
-	output_bit &= (1u << pin_out); // isolate output bit
-													
-	if (output_bit == input_bit) {
-
-		// toggle output bit using XOR
-		GPIO_out->ODR ^= (1u << pin_out);
-	
-	}	// if not equal, do nothing
-}
 
 
 void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number) {
@@ -423,12 +387,18 @@ int main(void) {
 	// seed random number generator
 	srand((unsigned)seed_counter);
 
-	int round;	
+	int round = 0;	
 	int round_total = 10;
 	
 	// populate list of random numbers from 0-3
 	// to represent the game sequence
-	int* light_sequence = generate_light_sequence(round_total);
+	int light_sequence[round_total];
+	for (int i = 0; i < round_total; i++) {
+		// collect numbers between 0-3 by shifting
+		// bits 29 and 30 of rand() to positions 0 and 1
+		// since we only need 2 bits to represent 4 numbers
+		light_sequence[i] = (rand() >> 29) & 0x3;
+	}
 	
 	// allocate memory for tracking user input
 	int input_sequence[round_total];
@@ -442,7 +412,7 @@ int main(void) {
 	
 	// BEGIN GAME LOOP
 	for (round = 1; round <= round_total && winning == 1; round++) {
-		delay(2000); // breathing room at start of round
+		delay(1000); // breathing room at start of round
 		
 		// show player pattern they need to match
 		// for this round
