@@ -181,9 +181,9 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 			inner_count++;
 			seed_counter++;
 			detect_input_global(1);
-		if (input_global != -1) { // placed on inner loop to poll input as frequently as possible
-			return input_global;
-		}
+			if (input_global != -1) { // placed on inner loop to poll input as frequently as possible
+				return input_global;
+			}
 		}
 		inner_count = 0;
 		count++;
@@ -191,9 +191,6 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 	}
 	return -1;
 }
-
-
-														GPIO_TypeDef* GPIO_out, 
 
 
 void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number) {
