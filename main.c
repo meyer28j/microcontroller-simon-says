@@ -148,7 +148,7 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 			
 			input = detect_input();
 			if (input != -1) { 
-				// placed on outer loop so not as expensive
+				// placed on inner loop to frequently poll user input
 				return input;
 			}
 		}
