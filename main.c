@@ -81,7 +81,7 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 }
 
 
-void detect_input_global(int trigger) {
+void detect_input_global() {
 	// if trigger is set to non-zero, input_global
 	// will only update on button presses and will
 	// not update for no-input state
@@ -97,9 +97,6 @@ void detect_input_global(int trigger) {
 			input_global = i;
 			return;
 		}
-	}
-	if (trigger == 0) {
-		input_global = -1;
 	}
 	return;
 }
@@ -126,7 +123,7 @@ int timer_button_interrupt(uint32_t volatile max_time) {
 		}
 		inner_count = 0;
 		count++;
-		detect_input_global(1);
+		detect_input_global();
 		if (input_global != -1) { // placed on outer loop so not as expensive
 			return input_global;
 		}
@@ -151,7 +148,7 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 		while (inner_count < max_time) {
 			inner_count++;
 			seed_counter++;
-			detect_input_global(1);
+			detect_input_global();
 			if (input_global != -1) { // placed on inner loop to poll input as frequently as possible
 				return input_global;
 			}

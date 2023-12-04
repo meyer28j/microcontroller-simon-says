@@ -13,7 +13,7 @@ void blink(int led, uint32_t duration);
 
 void blink_multi(int led_number[], int array_size, uint32_t duration);
 
-void detect_input_global(int trigger);
+void detect_input_global(void);
 
 int timer_button_interrupt(uint32_t volatile max_time);
 
