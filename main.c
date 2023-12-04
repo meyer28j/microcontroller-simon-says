@@ -84,32 +84,6 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 }
 
 
-int detect_input(void) {
-	// return values:
-	// -1: no input
-	//  0: black button was pressed
-	//  1: red button
-	//  2: green button
-	//  3: blue button
-	// This function assumes one button is pressed
-	// at a time. If more than one button is pressed
-	// at runtime, only the "lowest" button will be read
-	
-	uint32_t input_value;
-	for (int i = 0; i < 4; i++) {
-		// isolate input bit by shifting to zero position
-		input_value = button[i].GPIO->IDR >> button[i].pin;
-		input_value = ~input_value; // active low buttons
-		input_value &= 1;
-		
-		if (input_value == 1) {
-			return i;
-		}
-	}
-	return -1;
-}
-
-
 void detect_input_global(int trigger) {
 	// if trigger is set to non-zero, input_global
 	// will only update on button presses and will
@@ -187,7 +161,6 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 		}
 		inner_count = 0;
 		count++;
-
 	}
 	return -1;
 }
