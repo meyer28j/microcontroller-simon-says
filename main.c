@@ -70,16 +70,13 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 	// pass in array of which LEDs you want to power
 	// e.g. [1, 3] would turn on the 2nd and 4th LEDs
 	// e.g. [0, 2, 3] would turn on LEDs 1, 3, and 4
+	
 	for (int i = 0; i < array_size; i++) {
-		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
-			led_on(led_number[i]);
-		}
+		led_on(led_number[i]);
 	}
 	delay(duration);
 	for (int i = 0; i < array_size; i++) {
-		if (led_number[i] >= 0 && led_number[i] < 4) { // verify led_number is legal value
-			led_off(led_number[i]);
-		}
+		led_off(led_number[i]);
 	}
 }
 
@@ -232,7 +229,7 @@ void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number) {
 }
 
 
-void initialize_ports(void) {
+void initialize(void) {
 	// enable clock for ports A, B, C
 	RCC->APB2ENR |= (1u << 2) | (1u << 3) | (1u << 4); // set bits 2, 3, 4, 5 HIGH
 
@@ -246,16 +243,12 @@ void initialize_ports(void) {
 	enable_GPIO_output(GPIOA, 4);
 	enable_GPIO_output(GPIOB, 0);
 
-	
 	// enable input ports for board buttons
 	enable_GPIO_input(GPIOB, 4); // black button
 	enable_GPIO_input(GPIOB, 6); // red
 	enable_GPIO_input(GPIOB, 8); // blue
 	enable_GPIO_input(GPIOB, 9); // green
-}
 
-
-void initialize_leds_buttons(void) {
 	// statically bind each LED GPIO port and pin
 	led[0].GPIO = GPIOA;
 	led[0].pin = 0;
@@ -344,8 +337,7 @@ void display_binary(int number) {
 
 int main(void) {
 	
-	initialize_ports();
-	initialize_leds_buttons();
+	initialize();
 		
 	int all_leds[4] = {0, 1, 2, 3};
 

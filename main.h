@@ -23,10 +23,8 @@ void enable_GPIO_output(GPIO_TypeDef* GPIO, int port_number);
 
 void enable_GPIO_input(GPIO_TypeDef* GPIO, int port_number);
 													
-void initialize_ports(void);
-													
-void 	initialize_leds_buttons(void);
-													
+void initialize(void);
+																										
 void display_knight_rider(uint32_t blink_speed);
 													
 void display_binary(int score);
