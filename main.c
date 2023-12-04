@@ -82,10 +82,7 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 
 
 void detect_input_global() {
-	// if trigger is set to non-zero, input_global
-	// will only update on button presses and will
-	// not update for no-input state
-	
+
 	uint32_t input_value;
 	for (int i = 0; i < 4; i++) {
 		// isolate input bit by shifting to zero position
