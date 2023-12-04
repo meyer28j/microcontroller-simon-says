@@ -289,38 +289,24 @@ void display_knight_rider(uint32_t blink_speed) {
 }
 
 
-void display_binary(int number) {
-	// convert number to binary
-		int led_positions[4] = {-1, -1, -1, -1};
-		int led_count = 0;
-		
-		if (number >= 8) {
-			number -= 8;
-			led_positions[led_count] = 3; // enable 8s position LED
-			led_count++;
-		}
-		if (number >= 4) {
-			number -= 4;
-			led_positions[led_count] = 2; // enable 4s position LED
-			led_count++;
-		}
-		if (number >= 2) {
-			number -= 2;
-			led_positions[led_count] = 1; // enable 2s position LED
-			led_count++;
-		}
-		if (number >= 1) {
-			number -= 1;
-			led_positions[led_count] = 0; // enable 1s position LED
-			led_count++;
-		}
-		for (int i = 0; i < 4; i++) {
-			// turn on LEDs representing score
-			led_on(led_positions[i]);
-		}
+void display_binary_4_bit(int number) {
+	// display number as 4-bit binary on LEDs
+	
+	if (number > 15) {
+		// larger than 4 LEDs can display
 		return;
+	}
+	
+	int position = 0;
+	for (int i = 3; i >= 0; i--) {
+		position = 1 << i;
+		if (number >= position) {
+			number -= position; // recalculate number for next position check
+			led_on(i);
+		}
+	}
+	return;
 }
-
 
 
 int main(void) {
@@ -330,7 +316,7 @@ int main(void) {
 	int all_leds[4] = {0, 1, 2, 3};
 
 	uint32_t blink_speed = 600;
-	
+		
 	// runs indefinitely until user presses a button
 	display_knight_rider(blink_speed  / 2);
 
@@ -410,7 +396,7 @@ int main(void) {
 
 		// display score
 		round -= 2; // don't count last round, plus handle offset from starting at 1
-		display_binary(round);
+		display_binary_4_bit(round);
 		return 1; // end program with final score displayed
 	}
 	

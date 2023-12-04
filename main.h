@@ -27,7 +27,7 @@ void initialize(void);
 																										
 void display_knight_rider(uint32_t blink_speed);
 													
-void display_binary(int score);
+void display_binary_4_bit(int number);
 
 
 
