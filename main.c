@@ -1,11 +1,6 @@
 
 #include "main.h"
 
-// represents button input
-// -1  = no input
-// 0-3 = corresponding button was pressed
-int input_global = -1;	
-
 // regularly incremented as program runs
 // to produce pseudo-random number for srand()
 int seed_counter = 0;
@@ -81,7 +76,10 @@ void blink_multi(int led_number[], int array_size, uint32_t duration) {
 }
 
 
-void detect_input_global() {
+int detect_input() {
+	// represents button input
+	// -1  = no input
+	// 0-3 = corresponding button was pressed
 
 	uint32_t input_value;
 	for (int i = 0; i < 4; i++) {
@@ -91,11 +89,10 @@ void detect_input_global() {
 		input_value &= 1;
 		
 		if (input_value == 1) {
-			input_global = i;
-			return;
+			return i;
 		}
 	}
-	return;
+	return -1;
 }
 
 
@@ -110,9 +107,9 @@ int timer_button_interrupt(uint32_t volatile max_time) {
 	uint32_t volatile count = 0;
 	uint32_t volatile inner_count = 0;
 	
-	// reset input_global, since it's used
+	// initialize as "no input" since it's used
 	// as our exit condition
-	input_global = -1;
+	int input = -1;
 	
 	while (count < max_time) {
 		while (inner_count < max_time) {
@@ -120,9 +117,11 @@ int timer_button_interrupt(uint32_t volatile max_time) {
 		}
 		inner_count = 0;
 		count++;
-		detect_input_global();
-		if (input_global != -1) { // placed on outer loop so not as expensive
-			return input_global;
+		
+		input = detect_input();
+		if (input != -1) { 
+			// placed on outer loop so not as expensive
+			return input;
 		}
 	}
 	return -1;
@@ -137,17 +136,19 @@ int timer_button_interrupt_with_seeding(uint32_t volatile max_time) {
 	uint32_t volatile count = 0;
 	uint32_t volatile inner_count = 0;
 	
-	// reset input_global, since it's used
+	// initialize as "no input" since it's used
 	// as our exit condition
-	input_global = -1;
+	int input = -1;
 	
 	while (count < max_time) {
 		while (inner_count < max_time) {
 			inner_count++;
 			seed_counter++;
-			detect_input_global();
-			if (input_global != -1) { // placed on inner loop to poll input as frequently as possible
-				return input_global;
+			
+			input = detect_input();
+			if (input != -1) { 
+				// placed on outer loop so not as expensive
+				return input;
 			}
 		}
 		inner_count = 0;
@@ -368,7 +369,7 @@ int main(void) {
 	
 	// BEGIN GAME LOOP
 	for (round = 1; round <= round_total && winning == 1; round++) {
-		delay(1000); // breathing room at start of round
+		delay(1000); // delay between rounds
 		
 		// show player pattern they need to match
 		// for this round
